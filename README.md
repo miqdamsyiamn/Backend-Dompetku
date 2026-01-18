@@ -13,7 +13,7 @@ Backend API untuk aplikasi catatan keuangan pribadi menggunakan Go (Gin) dan Mon
 
 Main URL / Endpoint :
 ```
-https://your-vercel-url.vercel.app/
+https://dompetku-mu.vercel.app/
 ```
 
 ---
