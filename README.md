@@ -215,6 +215,44 @@ POST /api/goals/{id}/add
 }
 ```
 
+```
+
+#### Withdraw Progress (Tarik Dana)
+
+```http
+POST /api/goals/{id}/withdraw
+```
+
+```json
+{
+  "amount": 50000
+}
+```
+
+**Response Sukses:**
+```json
+{
+  "message": "Penarikan berhasil",
+  "withdrawn_amount": 50000,
+  "goal": {
+    "id": "...",
+    "nama": "Beli Laptop",
+    "target_amount": 12000000,
+    "current_amount": 50000
+  },
+  "progress_percentage": 0.42
+}
+```
+
+**Response Error (Saldo Tidak Cukup):**
+```json
+{
+  "error": "Jumlah penarikan melebihi saldo yang tersedia",
+  "current_amount": 100000,
+  "requested_amount": 150000
+}
+```
+
 #### Delete Goal
 
 ```http

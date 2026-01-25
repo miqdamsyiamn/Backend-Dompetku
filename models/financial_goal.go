@@ -30,6 +30,10 @@ type AddProgressInput struct {
 	Amount float64 `json:"amount" binding:"required,gt=0"`
 }
 
+type WithdrawProgressInput struct {
+	Amount float64 `json:"amount" binding:"required,gt=0"`
+}
+
 // Helper function to calculate progress percentage
 func (g *FinancialGoal) GetProgressPercentage() float64 {
 	if g.TargetAmount == 0 {

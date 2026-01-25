@@ -262,3 +262,66 @@ func DeleteGoal(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Goal berhasil dihapus"})
 }
+
+// WithdrawFromGoal - Menarik dana dari goal
+func WithdrawFromGoal(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	userObjectID, _ := primitive.ObjectIDFromHex(userID.(string))
+
+	goalID := c.Param("id")
+	objectID, err := primitive.ObjectIDFromHex(goalID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid goal ID"})
+		return
+	}
+
+	var input models.WithdrawProgressInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	collection := config.GetCollection("financial_goals")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Check if goal exists and belongs to user
+	var goal models.FinancialGoal
+	err = collection.FindOne(ctx, bson.M{"_id": objectID, "user_id": userObjectID}).Decode(&goal)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Goal tidak ditemukan"})
+		return
+	}
+
+	// Check if withdrawal amount is valid
+	if input.Amount > goal.CurrentAmount {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":             "Jumlah penarikan melebihi saldo yang tersedia",
+			"current_amount":    goal.CurrentAmount,
+			"requested_amount":  input.Amount,
+		})
+		return
+	}
+
+	newAmount := goal.CurrentAmount - input.Amount
+
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": objectID}, bson.M{
+		"$set": bson.M{
+			"current_amount": newAmount,
+			"updated_at":     time.Now(),
+		},
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to withdraw from goal"})
+		return
+	}
+
+	goal.CurrentAmount = newAmount
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":             "Penarikan berhasil",
+		"withdrawn_amount":    input.Amount,
+		"goal":                goal,
+		"progress_percentage": goal.GetProgressPercentage(),
+	})
+}
