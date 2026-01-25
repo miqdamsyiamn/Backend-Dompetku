@@ -7,6 +7,7 @@ import (
 
 	"DompetKu/config"
 	"DompetKu/models"
+	"DompetKu/utils"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -52,22 +53,48 @@ func UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	var input models.UpdateProfileInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
 	collection := config.GetCollection("users")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	update := bson.M{"updated_at": time.Now()}
-	if input.Nama != "" {
-		update["nama"] = input.Nama
-	}
-	if input.Foto != "" {
-		update["foto"] = input.Foto
+
+	// Check if this is multipart form (file upload)
+	contentType := c.GetHeader("Content-Type")
+	if len(contentType) >= 19 && contentType[:19] == "multipart/form-data" {
+		// Handle file upload
+		nama := c.PostForm("nama")
+		if nama != "" {
+			update["nama"] = nama
+		}
+
+		// Handle photo upload
+		file, fileHeader, err := c.Request.FormFile("foto")
+		if err == nil && file != nil {
+			defer file.Close()
+
+			// Upload to ImageKit
+			imageURL, err := utils.UploadToImageKit(file, fileHeader, "Dompetku")
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image: " + err.Error()})
+				return
+			}
+			update["foto"] = imageURL
+		}
+	} else {
+		// Handle JSON update (backward compatible)
+		var input models.UpdateProfileInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if input.Nama != "" {
+			update["nama"] = input.Nama
+		}
+		if input.Foto != "" {
+			update["foto"] = input.Foto
+		}
 	}
 
 	_, err = collection.UpdateOne(ctx, bson.M{"_id": objectID}, bson.M{"$set": update})
