@@ -215,8 +215,6 @@ POST /api/goals/{id}/add
 }
 ```
 
-```
-
 #### Withdraw Progress (Tarik Dana)
 
 ```http
