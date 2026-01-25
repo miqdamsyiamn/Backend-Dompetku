@@ -111,6 +111,7 @@ func setupRouter() *gin.Engine {
 				goals.GET("/:id", controllers.GetGoalByID)
 				goals.PUT("/:id", controllers.UpdateGoal)
 				goals.POST("/:id/add", controllers.AddProgressToGoal)
+				goals.POST("/:id/withdraw", controllers.WithdrawFromGoal)
 				goals.DELETE("/:id", controllers.DeleteGoal)
 			}
 
