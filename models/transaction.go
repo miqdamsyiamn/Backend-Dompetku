@@ -15,6 +15,7 @@ var AllowedCategories = []string{
 	"Hiburan",
 	"Pendidikan",
 	"Kesehatan",
+	"Goals",
 	"Lainnya",
 }
 
